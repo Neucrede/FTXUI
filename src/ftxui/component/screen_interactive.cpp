@@ -12,7 +12,7 @@
 #include <initializer_list>  // for initializer_list
 #include <iostream>  // for cout, ostream, operator<<, basic_ostream, endl, flush
 #include <stack>     // for stack
-#include <thread>    // for thread, sleep_for
+// #include <thread>    // for thread, sleep_for
 #include <tuple>     // for _Swallow_assign, ignore
 #include <type_traits>  // for decay_t
 #include <utility>      // for move, swap
@@ -77,7 +77,11 @@ constexpr int timeout_milliseconds = 20;
     timeout_milliseconds * 1000;
 #if defined(_WIN32)
 
+#ifndef USE_BOOST_THREADING_LIBRARY
 void EventListener(std::atomic<bool>* quit, Sender<Task> out) {
+#else
+void EventListener(std::atomic<bool>* quit, SenderImpl<Task>* out) {
+#endif
   auto console = GetStdHandle(STD_INPUT_HANDLE);
   auto parser = TerminalInputParser(out->Clone());
   while (!*quit) {
@@ -131,7 +135,11 @@ void EventListener(std::atomic<bool>* quit, Sender<Task> out) {
 #include <emscripten.h>
 
 // Read char from the terminal.
+#ifndef USE_BOOST_THREADING_LIBRARY
 void EventListener(std::atomic<bool>* quit, Sender<Task> out) {
+#else
+void EventListener(std::atomic<bool>* quit, SenderImpl<Task>* out) {
+#endif
   auto parser = TerminalInputParser(std::move(out));
 
   char c;
@@ -330,9 +338,17 @@ class CapturedMouseImpl : public CapturedMouseInterface {
   std::function<void(void)> callback_;
 };
 
+#ifndef USE_BOOST_THREADING_LIBRARY
 void AnimationListener(std::atomic<bool>* quit, Sender<Task> out) {
+#else
+void AnimationListener(std::atomic<bool>* quit, SenderImpl<Task>* out) {
+#endif
   // Animation at around 60fps.
+#ifndef USE_BOOST_THREADING_LIBRARY
   const auto time_delta = std::chrono::milliseconds(15);
+#else
+  const auto time_delta = boost::chrono::milliseconds(15);
+#endif
   while (!*quit) {
     out->Send(AnimationTask());
     std::this_thread::sleep_for(time_delta);
@@ -713,10 +729,19 @@ void ScreenInteractive::Install() {
 
   quit_ = false;
   task_sender_ = task_receiver_->MakeSender();
+#ifndef USE_BOOST_THREADING_LIBRARY
   event_listener_ =
       std::thread(&EventListener, &quit_, task_receiver_->MakeSender());
   animation_listener_ =
       std::thread(&AnimationListener, &quit_, task_receiver_->MakeSender());
+#else
+  event_task_sender_ = task_receiver_->MakeSender();
+  animation_task_sender_ = task_receiver_->MakeSender();
+  event_listener_ =
+      std::thread(&EventListener, &quit_, event_task_sender_.get());
+  animation_listener_ =
+      std::thread(&AnimationListener, &quit_, animation_task_sender_.get());
+#endif
 }
 
 // private

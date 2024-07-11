@@ -6,11 +6,30 @@
 
 #include <algorithm>           // for copy, max
 #include <atomic>              // for atomic, __atomic_base
-#include <condition_variable>  // for condition_variable
+// #include <condition_variable>  // for condition_variable
 #include <memory>              // for unique_ptr, make_unique
-#include <mutex>               // for mutex, unique_lock
+// #include <mutex>               // for mutex, unique_lock
 #include <queue>               // for queue
 #include <utility>             // for move
+
+#ifndef USE_BOOST_THREADING_LIBRARY
+    #include <condition_variable>  // for condition_variable
+    #include <mutex>               // for mutex, unique_lock
+#else
+    // remedy for compilers without C++ thread library implementation.
+    // e.g. mingw with Win32 threading model
+    //
+    #include <boost/thread/mutex.hpp>
+    #include <boost/thread/locks.hpp>
+    #include <boost/thread/condition_variable.hpp>
+    namespace std
+    {
+        using boost::mutex;
+        using boost::unique_lock;
+        using boost::condition_variable;
+    }
+#endif
+
 
 namespace ftxui {
 

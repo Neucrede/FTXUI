@@ -9,7 +9,7 @@
 #include <functional>                    // for function
 #include <memory>                        // for shared_ptr
 #include <string>                        // for string
-#include <thread>                        // for thread
+// #include <thread>                        // for thread
 #include <variant>                       // for variant
 
 #include "ftxui/component/animation.hpp"       // for TimePoint
@@ -17,6 +17,16 @@
 #include "ftxui/component/event.hpp"           // for Event
 #include "ftxui/component/task.hpp"            // for Task, Closure
 #include "ftxui/screen/screen.hpp"             // for Screen
+
+#ifndef USE_BOOST_THREADING_LIBRARY
+#include <thread>
+#else
+#include <boost/thread/thread.hpp>
+namespace std { 
+    using boost::thread; 
+    namespace this_thread = boost::this_thread;
+}
+#endif
 
 namespace ftxui {
 class ComponentBase;
@@ -104,6 +114,8 @@ class ScreenInteractive : public Screen {
   bool track_mouse_ = true;
 
   Sender<Task> task_sender_;
+  Sender<Task> event_task_sender_;
+  Sender<Task> animation_task_sender_;
   Receiver<Task> task_receiver_;
 
   std::string set_cursor_position;

@@ -60,3 +60,5 @@ out/
 # tools directory:
 !tools/**/*.sh
 !tools/**/*.cpp
+
+./build*

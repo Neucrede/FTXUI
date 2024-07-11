@@ -16,6 +16,8 @@ option(FTXUI_CLANG_TIDY "Execute clang-tidy" OFF)
 option(FTXUI_ENABLE_COVERAGE "Execute code coverage" OFF)
 option(FTXUI_DEV_WARNINGS "Enable more compiler warnings and warnings as errors" OFF)
 
+option(FTXUI_USE_BOOST_THREADING_LIBRARY "Use Boost threading library instead of standard library provided one." OFF)
+
 set(FTXUI_MICROSOFT_TERMINAL_FALLBACK_HELP_TEXT "On windows, assume the \
 terminal used will be one of Microsoft and use a set of reasonnable fallback \
 to counteract its implementations problems.")
@@ -153,6 +155,16 @@ if (NOT EMSCRIPTEN)
   target_link_libraries(component
     PUBLIC Threads::Threads
   )
+endif()
+
+if (FTXUI_USE_BOOST_THREADING_LIBRARY)
+    set(BOOST_ROOT "" CACHE PATH "Boost root directory")
+    set(Boost_NO_SYSTEM_PATHS ON)
+    set(Boost_USE_DEBUG_LIBS OFF)
+    find_package(Boost REQUIRED COMPONENTS thread)
+    target_include_directories(component PUBLIC ${Boost_INCLUDE_DIRS})
+    target_link_libraries(component PUBLIC ${Boost_LIBRARIES})
+    target_compile_definitions(component PUBLIC -DUSE_BOOST_THREADING_LIBRARY)
 endif()
 
 include(cmake/ftxui_set_options.cmake)
